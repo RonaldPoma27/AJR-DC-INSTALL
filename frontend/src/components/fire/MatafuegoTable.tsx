@@ -25,7 +25,7 @@ import MatafuegoForm from "./MatafuegoForm";
 import { cn, ui } from "@/lib/utils";
 
 const RANK: Record<Estado, number> = { VENCIDO: 0, PROXIMO: 1, VIGENTE: 2 };
-// Qué filtro de columna se muestra en la segunda fila del encabezado.
+
 const FILTER_KIND: Record<string, "text" | "estado" | "clase"> = {
   estado: "estado", nro_serie: "text", clase: "clase", cliente_nombre: "text", ubicacion: "text",
 };
@@ -43,12 +43,14 @@ function LifeBar({ pct, estado }: { pct: number; estado: Estado }) {
   );
 }
 
-/**
- * Planilla tipo Excel (TanStack Table): ordenamiento por columna, filtros múltiples
- * (búsqueda global + un filtro por columna), paginación, semáforo híbrido y descarga de QR crudo.
- * `canEdit=false` (cliente base) la deja en solo lectura y sin columnas internas.
- */
 export default function MatafuegoTable({ data, canEdit }: { data: Matafuego[]; canEdit: boolean }) {
+  // Normaliza data a un arreglo seguro (soporta arrays directos, paginación DRF { results: [...] } o fallos)
+  const items = useMemo<Matafuego[]>(() => {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray((data as any).results)) return (data as any).results;
+    return [];
+  }, [data]);
+
   const save = useSaveMatafuego();
   const del = useDeleteMatafuego();
   const [sorting, setSorting] = useState<SortingState>([{ id: "fecha_vencimiento_estimado", desc: false }]);
@@ -171,7 +173,7 @@ export default function MatafuegoTable({ data, canEdit }: { data: Matafuego[]; c
   }, [canEdit]);
 
   const table = useReactTable({
-    data,
+    data: items,
     columns,
     state: { sorting, columnFilters, globalFilter },
     onSortingChange: setSorting,
@@ -187,9 +189,14 @@ export default function MatafuegoTable({ data, canEdit }: { data: Matafuego[]; c
 
   const counts = useMemo(() => {
     const c: Record<Estado, number> = { VIGENTE: 0, PROXIMO: 0, VENCIDO: 0 };
-    data.forEach((m) => c[m.estado]++);
+    items.forEach((m) => {
+      if (m && m.estado && c[m.estado] !== undefined) {
+        c[m.estado]++;
+      }
+    });
     return c;
-  }, [data]);
+  }, [items]);
+
   const estadoFilter = (columnFilters.find((f) => f.id === "estado")?.value as string | undefined) ?? "";
   const setFilter = (id: string, value: string) =>
     setColumnFilters((prev) => [...prev.filter((f) => f.id !== id), ...(value ? [{ id, value }] : [])]);
@@ -304,7 +311,7 @@ export default function MatafuegoTable({ data, canEdit }: { data: Matafuego[]; c
             {table.getRowModel().rows.length === 0 && (
               <tr>
                 <td colSpan={columns.length} className="px-3 py-10 text-center text-sm text-fg-subtle">
-                  {data.length === 0 ? "Todavía no hay matafuegos cargados." : "Ningún matafuego coincide con los filtros."}
+                  {items.length === 0 ? "Todavía no hay matafuegos cargados." : "Ningún matafuego coincide con los filtros."}
                 </td>
               </tr>
             )}
