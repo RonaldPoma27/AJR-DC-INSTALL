@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* El modo oscuro se activa con la clase `dark` en <html> (ver lib/theme.tsx). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tokens semánticos: usar bg-surface / text-fg / border-line... hace que el modo oscuro funcione solo. */
+:root {
+  --c-app: #f4f7fc;
+  --c-surface: #ffffff;
+  --c-surface-2: #eef3fb;
+  --c-line: #dbe3f0;
+  --c-fg: #0f1b33;
+  --c-fg-muted: #34435f;
+  --c-fg-subtle: #64748b;
+  --c-accent: #1d6ae5;
+  color-scheme: light;
+}
+
+/* Oscuro: los azules transicionan a azul marino / gris oscuro. */
+.dark {
+  --c-app: #070d1a;
+  --c-surface: #0f1829;
+  --c-surface-2: #1a2438;
+  --c-line: #2a3650;
+  --c-fg: #f1f5fb;
+  --c-fg-muted: #cbd5e6;
+  --c-fg-subtle: #94a3bd;
+  --c-accent: #6aa8fa;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-app: var(--c-app);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-line: var(--c-line);
+  --color-fg: var(--c-fg);
+  --color-fg-muted: var(--c-fg-muted);
+  --color-fg-subtle: var(--c-fg-subtle);
+  --color-accent: var(--c-accent);
+  --color-ink: #0a0f1a; /* barra superior: siempre oscura, combina con el fondo del logo */
+  --color-brand: #1d6ae5;
+  --color-brand-dark: #1a5fd0;
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--c-line);
+  }
+  body {
+    background-color: var(--c-app);
+    color: var(--c-fg);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 2px;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--c-fg-subtle);
+  }
+  button:not(:disabled),
+  [role="button"] {
+    cursor: pointer;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
