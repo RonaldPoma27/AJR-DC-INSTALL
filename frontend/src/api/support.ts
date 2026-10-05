@@ -33,13 +33,35 @@ export interface ChatDetail extends ChatSummary {
   can_send: boolean;
 }
 
+// Función auxiliar para extraer siempre una lista válida
+function toArray<T>(data: any): T[] {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.results)) return data.results;
+  return [];
+}
+
 export const useChats = () =>
-  useQuery({ queryKey: ["chats"], queryFn: async () => (await api.get<ChatSummary[]>("/support/chats/")).data, refetchInterval: 20_000 });
+  useQuery<ChatSummary[]>({
+    queryKey: ["chats"],
+    queryFn: async () => {
+      const res = await api.get<any>("/support/chats/");
+      const data = res.data ?? res;
+      return toArray<ChatSummary>(data);
+    },
+    refetchInterval: 20_000,
+  });
 
 export const useChat = (id?: number) =>
-  useQuery({
+  useQuery<ChatDetail>({
     queryKey: ["chat", id],
-    queryFn: async () => (await api.get<ChatDetail>(`/support/chats/${id}/`)).data,
+    queryFn: async () => {
+      const res = await api.get<any>(`/support/chats/${id}/`);
+      const data = res.data ?? res;
+      if (data && !Array.isArray(data.messages)) {
+        data.messages = toArray<Message>(data.messages);
+      }
+      return data as ChatDetail;
+    },
     enabled: id != null,
     refetchInterval: 10_000,
   });
@@ -49,7 +71,14 @@ export const useUnread = () => {
   const hasSession = useHasSession();
   return useQuery({
     queryKey: ["unread"],
-    queryFn: async () => (await api.get<{ count: number; chats: ChatSummary[] }>("/support/unread/")).data,
+    queryFn: async () => {
+      const res = await api.get<any>("/support/unread/");
+      const data = res.data ?? res;
+      return {
+        count: data?.count ?? 0,
+        chats: toArray<ChatSummary>(data?.chats),
+      };
+    },
     enabled: hasSession,
     refetchInterval: 30_000,
   });
