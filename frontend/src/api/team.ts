@@ -10,7 +10,17 @@ export interface Member {
   date_joined: string;
 }
 
-export const useTeam = () => useQuery({ queryKey: ["team"], queryFn: async () => (await api.get<Member[]>("/team/")).data });
+export const useTeam = () =>
+  useQuery<Member[]>({
+    queryKey: ["team"],
+    queryFn: async () => {
+      const res = await api.get<any>("/team/");
+      const data = res.data ?? res;
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray(data.results)) return data.results;
+      return [];
+    },
+  });
 
 export function useAssignTechnician() {
   const qc = useQueryClient();
